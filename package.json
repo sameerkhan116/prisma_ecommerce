@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "ecommerce",
   "scripts": {
     "start": "dotenv -- nodemon -e ts,graphql -x ts-node src/index.ts",
     "dev": "npm-run-all --parallel start playground",
@@ -11,7 +11,6 @@
     "bcryptjs": "2.4.3",
     "graphql-yoga": "1.14.6",
     "jsonwebtoken": "8.2.2",
-    "npm": "^6.1.0",
     "prisma-binding": "2.0.2"
   },
   "devDependencies": {
