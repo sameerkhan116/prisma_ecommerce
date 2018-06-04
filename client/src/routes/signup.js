@@ -62,12 +62,12 @@ class Signup extends Component {
       return;
     }
     await AsyncStorage.setItem('@ecommerce/token', response.data.signup.token);
-    this.setState(defaultState);
+    // this.setState(defaultState);
     this.props.history.push('/products');
   }
 
   goToLogin = () => {
-    this.props.history.push('/login');
+    this.props.history.push('/');
   }
 
   render() {
