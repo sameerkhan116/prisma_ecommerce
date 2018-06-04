@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
-import { Button, View, TextInput, StyleSheet } from 'react-native';
+import { AsyncStorage, Text, Button, View, StyleSheet } from 'react-native';
 import gql from 'graphql-tag';
 import { graphql } from 'react-apollo';
+
+import TextField from './components/TextField';
 
 const styles = StyleSheet.create({
   container: {
@@ -10,26 +12,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  field: {
-    fontSize: 15,
-    marginBottom: 15,
-    height: 35,
-  },
   secondary: {
     width: 300,
   },
+  error: {
+    color: 'red',
+  },
 });
 
+const defaultState = {
+  values: {
+    name: '',
+    email: '',
+    password: '',
+  },
+  errors: {},
+  isSubmitting: false,
+};
+
 class Signup extends Component {
-  state = {
-    values: {
-      name: '',
-      email: '',
-      password: '',
-    },
-    errors: {},
-    isSubmitting: false,
-  }
+  state = defaultState;
 
   onChangeText = (name, value) => {
     this.setState(state => ({
@@ -41,40 +43,58 @@ class Signup extends Component {
   }
 
   submit = async () => {
-    if(this.state.isSubmitting) return;
+    if (this.state.isSubmitting) return;
     this.setState({ isSubmitting: true });
-    const response = await this.props.mutate({
-      variables: this.state.values,
-    });
-    console.log(response);
-    this.setState({ isSubmitting: false });
+    let response;
+    try {
+      response = await this.props.mutate({
+        variables: this.state.values,
+      });
+      console.log(response);
+    } catch (err) {
+      this.setState({
+        errors: {
+          email: 'Already taken',
+        },
+        isSubmitting: false,
+      });
+      console.log(err);
+      return;
+    }
+    await AsyncStorage.setItem('@ecommerce/token', response.data.signup.token);
+    this.setState(defaultState);
+    this.props.history.push('/products');
+  }
+
+  goToLogin = () => {
+    this.props.history.push('/login');
   }
 
   render() {
-    const { values: { name, email, password } } = this.state;
+    const { values: { name, email, password }, errors } = this.state;
     return (
       <View style={styles.container}>
         <View style={styles.secondary}>
-          <TextInput
+          <TextField
             value={name}
-            style={styles.field}
-            placeholder="Name"
-            onChangeText={text => this.onChangeText('name', text)}
+            name="name"
+            onChangeText={this.onChangeText}
           />
-          <TextInput
+          {errors.email && <Text style={styles.error}>{errors.email}</Text>}
+          <TextField
             value={email}
-            style={styles.field}
-            placeholder="Email"
-            onChangeText={text => this.onChangeText('email', text)}
+            name="email"
+            onChangeText={this.onChangeText}
           />
-          <TextInput
+          <TextField
             value={password}
-            style={styles.field}
-            placeholder="Password"
+            name="password"
             secureTextEntry
-            onChangeText={text => this.onChangeText('password', text)}
+            onChangeText={this.onChangeText}
           />
           <Button title="Create account" onPress={this.submit} />
+          <Text style={{ textAlign: 'center' }}>-OR-</Text>
+          <Button title="Go to login" onPress={this.goToLogin} />
         </View>
       </View>
     );
