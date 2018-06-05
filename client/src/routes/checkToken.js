@@ -14,9 +14,7 @@ class CheckToken extends Component {
     }
     let response;
     try {
-      response = await this.props.mutate({
-        variables: { token },
-      });
+      response = await this.props.mutate();
       console.log(response);
     } catch (err) {
       this.props.history.push('/signup');
@@ -43,8 +41,8 @@ class CheckToken extends Component {
 }
 
 const CHECK_REFRESH_TOKEN = gql`
-  mutation($token: String!) {
-    refreshToken(token: $token)
+  mutation {
+    refreshToken
   }
 `;
 

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Button, View, StyleSheet, Image } from 'react-native';
 import { ImagePicker } from 'expo';
 import gql from 'graphql-tag';
-import { graphql} from 'react-apollo';
+import { graphql } from 'react-apollo';
 import { ReactNativeFile } from 'apollo-upload-client';
 
 import TextField from '../components/TextField';
@@ -56,7 +56,7 @@ class NewProduct extends Component {
     });
 
     if (!result.cancelled) {
-      onChangeText('pictureUrl', result.uri);
+      this.onChangeText('pictureUrl', result.uri);
     }
   }
 
@@ -80,6 +80,7 @@ class NewProduct extends Component {
       });
     } catch (err) {
       console.log(err);
+      return;
     }
     console.log(response);
     this.props.history.push('/products');
@@ -116,7 +117,7 @@ class NewProduct extends Component {
 }
 
 const CREATE_PRODUCT_MUTATION = gql`
-  mutation($name: String!, $price: String!, $picture: Upload!) {
+  mutation($name: String!, $price: Float!, $picture: Upload!) {
     createProduct(name: $name, price: $price, picture: $picture) {
       id
     }

@@ -3,8 +3,8 @@ import * as jwt from 'jsonwebtoken'
 import { Context, createToken, getUserId } from '../../utils'
 
 export const auth = {
-  async refreshToken(parent, { token }, ctx: Context, info) {
-    const userId = getUserId(ctx, token)
+  async refreshToken(parent, args, ctx: Context, info) {
+    const userId = getUserId(ctx)
     return createToken(userId)
   },
 
