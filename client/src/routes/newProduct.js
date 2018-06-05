@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import { Button, View, StyleSheet, Image } from 'react-native';
 import { ImagePicker } from 'expo';
+import gql from 'graphql-tag';
+import { graphql} from 'react-apollo';
+import { ReactNativeFile } from 'apollo-upload-client';
 
 import TextField from '../components/TextField';
 
@@ -53,21 +56,27 @@ class NewProduct extends Component {
     });
 
     if (!result.cancelled) {
-      this.setState({
-        values: {
-          pictureUrl: result.uri,
-        },
-      });
+      onChangeText('pictureUrl', result.uri);
     }
   }
 
   submit = async () => {
     if (this.state.isSubmitting) return;
     this.setState({ isSubmitting: true });
+    const { pictureUrl, name, price } = this.state.values;
+    const picture = new ReactNativeFile({
+      uri: pictureUrl,
+      type: 'image/png',
+      name,
+    });
     let response;
     try {
       response = await this.props.mutate({
-        variables: this.state.values,
+        variables: {
+          name,
+          price,
+          picture,
+        },
       });
     } catch (err) {
       console.log(err);
@@ -106,4 +115,12 @@ class NewProduct extends Component {
   }
 }
 
-export default NewProduct;
+const CREATE_PRODUCT_MUTATION = gql`
+  mutation($name: String!, $price: String!, $picture: Upload!) {
+    createProduct(name: $name, price: $price, picture: $picture) {
+      id
+    }
+  }
+`;
+
+export default graphql(CREATE_PRODUCT_MUTATION)(NewProduct);
