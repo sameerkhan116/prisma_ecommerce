@@ -3,7 +3,8 @@ import { AsyncStorage, Text, Button, View, StyleSheet } from 'react-native';
 import gql from 'graphql-tag';
 import { graphql } from 'react-apollo';
 
-import TextField from './components/TextField';
+import TextField from '../components/TextField';
+import { TOKEN_KEY } from '../constants';
 
 const styles = StyleSheet.create({
   container: {
@@ -52,7 +53,7 @@ class Login extends Component {
     const { payload, error } = response.data.login;
 
     if (payload) {
-      await AsyncStorage.setItem('@ecommerce/token', payload.token);
+      await AsyncStorage.setItem(TOKEN_KEY, payload.token);
       // this.setState(defaultState);
       this.props.history.push('/products');
     } else {

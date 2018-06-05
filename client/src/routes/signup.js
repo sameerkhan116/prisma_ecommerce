@@ -3,7 +3,8 @@ import { AsyncStorage, Text, Button, View, StyleSheet } from 'react-native';
 import gql from 'graphql-tag';
 import { graphql } from 'react-apollo';
 
-import TextField from './components/TextField';
+import TextField from '../components/TextField';
+import { TOKEN_KEY } from '../constants';
 
 const styles = StyleSheet.create({
   container: {
@@ -61,7 +62,7 @@ class Signup extends Component {
       console.log(err);
       return;
     }
-    await AsyncStorage.setItem('@ecommerce/token', response.data.signup.token);
+    await AsyncStorage.setItem(TOKEN_KEY, response.data.signup.token);
     // this.setState(defaultState);
     this.props.history.push('/products');
   }
