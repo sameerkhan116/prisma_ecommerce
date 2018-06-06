@@ -6,6 +6,7 @@ import { graphql } from 'react-apollo';
 import { ReactNativeFile } from 'apollo-upload-client';
 
 import TextField from '../components/TextField';
+import { PRODUCTS_QUERY as query } from './products';
 
 const styles = StyleSheet.create({
   container: {
@@ -77,6 +78,11 @@ class NewProduct extends Component {
           price,
           picture,
         },
+        update: (store, { data: { createProduct } }) => {
+          const data = store.readQuery({ query });
+          data.products.push(createProduct);
+          store.writeQuery({ query, data });
+        },
       });
     } catch (err) {
       console.log(err);
@@ -119,7 +125,11 @@ class NewProduct extends Component {
 const CREATE_PRODUCT_MUTATION = gql`
   mutation($name: String!, $price: Float!, $picture: Upload!) {
     createProduct(name: $name, price: $price, picture: $picture) {
+      __typename
       id
+      name
+      price
+      pictureUrl
     }
   }
 `;

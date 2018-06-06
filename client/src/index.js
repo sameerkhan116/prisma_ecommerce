@@ -6,9 +6,11 @@ import { ApolloClient } from 'apollo-client';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { createUploadLink } from 'apollo-upload-client';
 import { setContext } from 'apollo-link-context';
+import { Provider } from 'react-redux';
 
 import Routes from './routes';
 import { TOKEN_KEY } from './constants';
+import store from './store';
 
 const uploadLink = createUploadLink({ uri: 'http://10.0.0.32:4000' });
 const authLink = setContext(async (_, { headers }) => {
@@ -27,7 +29,9 @@ const cache = new InMemoryCache();
 const client = new ApolloClient({ link, cache });
 
 export default () => (
-  <ApolloProvider client={client}>
-    <Routes />
-  </ApolloProvider>
+  <Provider store={store}>
+    <ApolloProvider client={client}>
+      <Routes />
+    </ApolloProvider>
+  </Provider>
 );

@@ -33,12 +33,13 @@ const styles = StyleSheet.create({
 
 const Products = ({ data: { products }, loading, history }) => {
   if (loading || !products) return null;
-  console.log(products[0]);
+  // console.log(products[0]);
   return (
     <View style={styles.container}>
       <Button title="Add a product" onPress={() => history.push('/new-product')} />
       <FlatList
-        data={products.map(p => ({ ...p, key: p.id }))}
+        keyExtractor={item => item.id}
+        data={products}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <Image
@@ -56,7 +57,7 @@ const Products = ({ data: { products }, loading, history }) => {
   );
 };
 
-const PRODUCTS_QUERY = gql`
+export const PRODUCTS_QUERY = gql`
   {
     products {
       id
