@@ -130,6 +130,9 @@ const CREATE_PRODUCT_MUTATION = gql`
       name
       price
       pictureUrl
+      seller {
+        id
+      }
     }
   }
 `;

@@ -29,9 +29,15 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 20,
   },
+  edit: {
+    display: 'flex',
+    flexDirection: 'row',
+  },
 });
 
-const Products = ({ data: { products }, loading, history }) => {
+const Products = ({
+  data: { products }, loading, history,
+}) => {
   if (loading || !products) return null;
   // console.log(products[0]);
   return (
@@ -64,8 +70,13 @@ export const PRODUCTS_QUERY = gql`
       price
       pictureUrl
       name
+      seller {
+        id
+      }
     }
   }
 `;
 
-export default graphql(PRODUCTS_QUERY)(Products);
+const grapqhlComponnet = graphql(PRODUCTS_QUERY)(Products);
+
+export default grapqhlComponnet;
