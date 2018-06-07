@@ -20,7 +20,7 @@ class CheckToken extends Component {
       this.props.history.push('/signup');
       return;
     }
-    const { refreshToken: { token: newToken } } = response.data;
+    const { refreshToken: { token: newToken, userId } } = response.data;
     await AsyncStorage.setItem(TOKEN_KEY, newToken);
     this.props.history.push('/products');
   }

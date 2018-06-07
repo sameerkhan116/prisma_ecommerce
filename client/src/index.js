@@ -2,15 +2,13 @@ import React from 'react';
 import { AsyncStorage } from 'react-native';
 import { ApolloProvider } from 'react-apollo';
 import { ApolloClient } from 'apollo-client';
-// import { createHttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { createUploadLink } from 'apollo-upload-client';
 import { setContext } from 'apollo-link-context';
-import { Provider } from 'react-redux';
+import { ApolloLink } from 'apollo-link';
 
 import Routes from './routes';
 import { TOKEN_KEY } from './constants';
-import store from './store';
 
 const uploadLink = createUploadLink({ uri: 'http://10.0.0.32:4000' });
 const authLink = setContext(async (_, { headers }) => {
@@ -23,15 +21,16 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
-const link = authLink.concat(uploadLink);
+const link = ApolloLink.from([
+  authLink,
+  uploadLink,
+]);
 const cache = new InMemoryCache();
 
 const client = new ApolloClient({ link, cache });
 
 export default () => (
-  <Provider store={store}>
-    <ApolloProvider client={client}>
-      <Routes />
-    </ApolloProvider>
-  </Provider>
+  <ApolloProvider client={client}>
+    <Routes />
+  </ApolloProvider>
 );
