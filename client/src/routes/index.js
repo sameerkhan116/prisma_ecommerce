@@ -7,6 +7,7 @@ import Login from './login';
 import Products from './products';
 import CheckToken from './checkToken';
 import NewProduct from './newProduct';
+import EditProduct from './editProduct';
 
 export default() => (
   <NativeRouter>
@@ -16,6 +17,7 @@ export default() => (
       <Route exact path="/login" component={Login} />
       <Route exact path="/new-product" component={NewProduct} />
       <Route exact path="/products" component={Products} />
+      <Route exact path="/edit-product" component={EditProduct} />
     </Switch>
   </NativeRouter>
 );
