@@ -1,5 +1,15 @@
 import React, { Component } from 'react';
-import { ActivityIndicator, Text, View, Button, AsyncStorage, FlatList, Image, StyleSheet } from 'react-native';
+import {
+  ActivityIndicator,
+  TouchableOpacity,
+  Text,
+  View,
+  Button,
+  AsyncStorage,
+  FlatList,
+  Image,
+  StyleSheet,
+} from 'react-native';
 import { graphql, compose } from 'react-apollo';
 import gql from 'graphql-tag';
 import decode from 'jwt-decode';
@@ -70,6 +80,23 @@ export const PRODUCTS_QUERY = gql`
   }
 `;
 
+const PRODUCTS_SUBSCRIPTION = gql`
+  subscription {
+    product(where: {
+      mutation_in: UPDATED
+    }) {
+      __typename
+      id
+      name
+      price
+      pictureUrl
+      seller {
+        id
+      }
+    }
+  }
+`;
+
 class Products extends Component {
   state = {
     userId: null,
@@ -80,18 +107,37 @@ class Products extends Component {
     const token = await AsyncStorage.getItem(TOKEN_KEY);
     const { userId } = decode(token);
     this.setState({ userId });
+    this.props.data.subscribeToMore({
+      document: PRODUCTS_SUBSCRIPTION,
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData) return prev;
+        const { node } = subscriptionData.data.product;
+        // eslint-disable-next-line no-param-reassign
+        prev.productConnection.edges = prev.productsConnection.edges
+          .map(x => (x.node.id === node.id
+            ? {
+              cursor: node.id,
+              node,
+              __typename: 'Node',
+            }
+            : x
+          ));
+        return prev;
+      },
+    });
   }
 
   onChangeText = (name, text) => {
-    this.setState({
-      query: text,
-    });
-    this.props.data.refetch({
-      where: {
-        name_contains: text,
-      },
-      after: null,
-    });
+    this.setState({ query: text });
+    this
+      .props
+      .data
+      .refetch({
+        where: {
+          name_contains: text,
+        },
+        after: null,
+      });
   }
 
   deleteProduct = async (id, variables) => {
@@ -130,9 +176,10 @@ class Products extends Component {
       },
       loading,
       history,
+      updatePrice,
     } = this.props;
     const { userId } = this.state;
-    if (loading || !productsConnection) return null;
+    if (loading || !productsConnection) { return null; }
     console.log(productsConnection);
     return (
       <View style={styles.container}>
@@ -163,42 +210,47 @@ class Products extends Component {
             />
           </View>
         </View>
-        <Button title="Add a product" onPress={() => history.push({ pathname: '/new-product', state: variables })} />
+        <Button
+          title="Add a product"
+          onPress={() => history.push({ pathname: '/new-product', state: variables })}
+        />
         <FlatList
           ListFooterComponent={() => productsConnection.pageInfo.hasNextPage && <ActivityIndicator size="large" color="#0000ff" />}
           keyExtractor={item => item.id}
           onEndReachedThreshold={0}
           onEndReached={() => {
-            if (!loading && productsConnection.pageInfo.hasNextPage) {
-              fetchMore({
-                variables: {
-                  after: productsConnection.pageInfo.endCursor,
-                },
-                updateQuery: (previousResult, { fetchMoreResult }) => {
-                  if (!fetchMoreResult) return previousResult;
-                  if (!previousResult
+          if (!loading && productsConnection.pageInfo.hasNextPage) {
+            fetchMore({
+              variables: {
+                after: productsConnection.pageInfo.endCursor,
+              },
+              updateQuery: (previousResult, { fetchMoreResult }) => {
+                if (!fetchMoreResult) { return previousResult; }
+                if (!previousResult
                       || !previousResult.productsConnection
                       || !previousResult.productsConnection.edges) {
-                    return fetchMoreResult;
-                  }
-                  return {
-                    productsConnection: {
-                      __typename: 'ProductsConnection',
-                      pageInfo: fetchMoreResult.productsConnections.pageInfo,
-                      edges: [
-                        ...previousResult.productsConnections.edges,
-                        ...fetchMoreResult.productsConnections.edges,
-                      ],
-                    },
-                  };
-                },
-              });
-            } else this.calledOnce = true;
+                  return fetchMoreResult;
+                }
+                return {
+                  productsConnection: {
+                    __typename: 'ProductsConnection',
+                    pageInfo: fetchMoreResult.productsConnections.pageInfo,
+                    edges: [
+                      ...previousResult.productsConnections.edges,
+                      ...fetchMoreResult.productsConnections.edges,
+                    ],
+                  },
+                };
+              },
+            });
+          } else { this.calledOnce = true; }
           }}
-          data={productsConnection.edges.map(x => ({
-          ...x.node,
-          showButtons: userId === x.node.seller.id,
-        }))}
+          data={productsConnection
+          .edges
+          .map(x => ({
+            ...x.node,
+            showButtons: userId === x.node.seller.id,
+          }))}
           renderItem={({ item }) => (
             <View style={styles.row}>
               <Image
@@ -209,7 +261,15 @@ class Products extends Component {
               />
               <View style={styles.right}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.price}>${item.price}</Text>
+                <TouchableOpacity onPress={() => updatePrice({
+                  variables: {
+                    id: item.id,
+                    price: item.price + 5,
+                  },
+                })}
+                >
+                  <Text style={styles.price}>${item.price}</Text>
+                </TouchableOpacity>
                 {item.showButtons && (
                 <View style={styles.edit}>
                   <Button title="Edit" onPress={() => this.editProduct(item, variables)} />
@@ -224,6 +284,21 @@ class Products extends Component {
     );
   }
 }
+
+const UPDATE_PRODUCT_PRICE_MUTATION = gql`
+  mutation($id: ID!, $price: Float) {
+    updateProduct(id: $id, price: $price) {
+      __typename
+      id
+      name
+      price
+      pictureUrl
+      seller {
+        id
+      }
+    }
+  }
+`;
 
 const DELETE_PRODUCT = gql`
   mutation($id: ID!) {
@@ -242,6 +317,9 @@ const graphqlComponent = compose(
     },
   }),
   graphql(DELETE_PRODUCT),
+  graphql(UPDATE_PRODUCT_PRICE_MUTATION, {
+    name: 'updatePrice',
+  }),
 )(Products);
 
 export default graphqlComponent;

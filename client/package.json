@@ -30,7 +30,9 @@
     "apollo-link": "^1.2.2",
     "apollo-link-context": "^1.0.8",
     "apollo-link-http": "^1.5.4",
+    "apollo-link-ws": "^1.0.8",
     "apollo-upload-client": "^8.0.0",
+    "apollo-utilities": "^1.0.13",
     "expo": "^27.0.1",
     "graphql": "^0.13.2",
     "graphql-tag": "^2.9.2",
@@ -38,6 +40,7 @@
     "react": "16.3.1",
     "react-apollo": "^2.1.4",
     "react-native": "~0.55.2",
-    "react-router-native": "^4.2.0"
+    "react-router-native": "^4.2.0",
+    "subscriptions-transport-ws": "^0.9.10"
   }
 }
