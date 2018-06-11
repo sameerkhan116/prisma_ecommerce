@@ -6,7 +6,7 @@ import { ReactNativeFile } from 'apollo-upload-client';
 import { PRODUCTS_QUERY as query } from './products';
 import Form from '../components/Form';
 
-const submit = async (values) => {
+const submit = async (values, mutate, history) => {
   const { pictureUrl, name, price } = values;
   const picture = new ReactNativeFile({
     uri: pictureUrl,
@@ -15,7 +15,7 @@ const submit = async (values) => {
   });
   let response;
   try {
-    response = await this.props.mutate({
+    response = await mutate({
       variables: {
         name,
         price,
@@ -32,10 +32,10 @@ const submit = async (values) => {
     return;
   }
   console.log(response);
-  this.props.history.push('/products');
+  history.push('/products');
 };
 
-const NewProduct = () => <Form current="Add" submit={submit} />;
+const NewProduct = ({ mutate, history }) => <Form current="Add" submit={values => submit(values, mutate, history)} />;
 
 const CREATE_PRODUCT_MUTATION = gql`
   mutation($name: String!, $price: Float!, $picture: Upload!) {
