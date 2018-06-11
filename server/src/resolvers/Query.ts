@@ -4,7 +4,11 @@ import { getUserId, Context } from '../utils'
 
 export const Query = {
   products: (parent, args, ctx: Context, info) => {
-    getUserId(ctx);
+    getUserId(ctx)
+    return forwardTo('db')(parent, args, ctx, info)
+  },
+  productsConnection: (parent, args, ctx: Context, info) => {
+    getUserId(ctx)
     return forwardTo('db')(parent, args, ctx, info)
   },
   feed(parent, args, ctx: Context, info) {

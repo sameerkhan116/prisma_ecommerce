@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Text, View, Button, AsyncStorage, FlatList, Image, StyleSheet } from 'react-native';
+import { ActivityIndicator, Text, View, Button, AsyncStorage, FlatList, Image, StyleSheet } from 'react-native';
 import { graphql, compose } from 'react-apollo';
 import gql from 'graphql-tag';
 import decode from 'jwt-decode';
@@ -10,6 +10,8 @@ import TextField from '../components/TextField';
 const styles = StyleSheet.create({
   container: {
     paddingTop: 40,
+    display: 'flex',
+    flex: 1,
   },
   images: {
     height: 80,
@@ -47,14 +49,22 @@ const styles = StyleSheet.create({
 });
 
 export const PRODUCTS_QUERY = gql`
-  query($orderBy: ProductOrderByInput, $where: ProductWhereInput) {
-    products(orderBy: $orderBy, where: $where) {
-      id
-      price
-      pictureUrl
-      name
-      seller {
-        id
+  query($after: String, $orderBy: ProductOrderByInput, $where: ProductWhereInput) {
+    productsConnection(after: $after, first: 5, orderBy: $orderBy, where: $where) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      edges {
+        node {
+          id
+          price
+          pictureUrl
+          name
+          seller {
+            id
+          }
+        }
       }
     }
   }
@@ -92,9 +102,10 @@ class Products extends Component {
         },
         update: (store) => {
           const data = store.readQuery({ query: PRODUCTS_QUERY });
-          data.products = data
-            .products
-            .filter(x => x.id !== id);
+          data.productsConnection.edges = data
+            .productsConnection
+            .edges
+            .filter(x.node => x.node.id !== id);
           store.writeQuery({ query: PRODUCTS_QUERY, data });
         },
       });
@@ -111,16 +122,17 @@ class Products extends Component {
   render() {
     const {
       data: {
-        products,
+        productsConnection,
         refetch,
         variables,
+        fetchMore,
       },
       loading,
       history,
     } = this.props;
     const { userId } = this.state;
-    if (loading || !products) return null;
-
+    if (loading || !productsConnection) return null;
+    console.log(productsConnection);
     return (
       <View style={styles.container}>
         <View>
@@ -150,10 +162,35 @@ class Products extends Component {
         </View>
         <Button title="Add a product" onPress={() => history.push('/new-product')} />
         <FlatList
+          ListFooterComponent={() => productsConnection.pageInfo.hasNextPage && <ActivityIndicator size="large" color="#0000ff" />}
           keyExtractor={item => item.id}
-          data={products.map(x => ({
-          ...x,
-          showButtons: userId === x.seller.id,
+          onEndReachedThreshold={0}
+          onEndReached={() => {
+            if (this.calledOnce && productsConnections.pageInfo.hasNextPage) {
+              fetchMore({
+                variables: {
+                  after: productsConnection.pageInfo.endCursor,
+                },
+                updateQuery: (previousResult, { fetchMoreResult }) => {
+                  if(!fetchMoreResult) return previousResult;
+                  return {
+                    productsConnection: {
+                      __typename: 'ProductsConnection',
+                      pageInfo: fetchMoreResult.productsConnections.pageInfo,
+                      edges: [
+                        ...previousResult.productsConnections.edges,
+                        ...fetchMoreResult.productsConnections.edges
+                      ]
+                    }
+                  }
+                }
+              });
+            }
+            else this.calledOnce = true;
+          }}
+          data={productsConnection.edges.map(x.node => ({
+          ...x.node,
+          showButtons: userId === x.node.seller.id,
         }))}
           renderItem={({ item }) => (
             <View style={styles.row}>
@@ -189,6 +226,15 @@ const DELETE_PRODUCT = gql`
   }
 `;
 
-const graphqlComponent = compose(graphql(PRODUCTS_QUERY), graphql(DELETE_PRODUCT))(Products);
+const graphqlComponent = compose(
+  graphql(PRODUCTS_QUERY, {
+    options: {
+      variables: {
+        orderBy: 'createdAt_ASC'
+      }
+    }
+  }), 
+  graphql(DELETE_PRODUCT)
+)(Products);
 
 export default graphqlComponent;
