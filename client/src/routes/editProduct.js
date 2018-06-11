@@ -9,7 +9,7 @@ import Form from '../components/Form';
 const submit = async (values, state, history, mutate) => {
   const { pictureUrl, name, price } = values;
   let picture = null;
-  if (state.pictureUrl !== pictureUrl) {
+  if (state.item.pictureUrl !== pictureUrl) {
     picture = new ReactNativeFile({
       uri: pictureUrl,
       type: 'image/png',
@@ -20,15 +20,23 @@ const submit = async (values, state, history, mutate) => {
   try {
     response = await mutate({
       variables: {
-        id: state.id,
+        id: state.item.id,
         name,
         price,
         picture,
       },
       update: (store, { data: { updateProduct } }) => {
-        const data = store.readQuery({ query });
-        data.products = data.products.map(x => (x.id === updateProduct.id ? updateProduct : x));
-        store.writeQuery({ query, data });
+        const data = store.readQuery({ query, variables: state.variables });
+        data.productsConnections.edges =
+          data.productsConnection.edges.map(x =>
+            (x.node.id === updateProduct.id
+              ? ({
+                __typename: 'Node',
+                cursor: updateProduct.id,
+                node: updateProduct,
+              })
+              : x));
+        store.writeQuery({ query, data, variables: state.variables });
       },
     });
   } catch (err) {
@@ -42,9 +50,9 @@ const submit = async (values, state, history, mutate) => {
 const EditProduct = ({ location: { state }, history, mutate }) => (
   <Form
     initialValues={{
-    name: state.name,
-    price: `${state.price}`,
-    pictureUrl: `http://10.0.0.32:4000/${state.pictureUrl}`,
+    name: state.item.name,
+    price: `${state.item.price}`,
+    pictureUrl: `http://10.0.0.32:4000/${state.item.pictureUrl}`,
   }}
     submit={values => submit(values, state, history, mutate)}
     current="Edit"

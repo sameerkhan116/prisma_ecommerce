@@ -90,10 +90,11 @@ class Products extends Component {
       where: {
         name_contains: text,
       },
+      after: null,
     });
   }
 
-  deleteProduct = async (id) => {
+  deleteProduct = async (id, variables) => {
     const deleteResponse = await this
       .props
       .mutate({
@@ -101,22 +102,22 @@ class Products extends Component {
           id,
         },
         update: (store) => {
-          const data = store.readQuery({ query: PRODUCTS_QUERY });
+          const data = store.readQuery({ query: PRODUCTS_QUERY, variables });
           data.productsConnection.edges = data
             .productsConnection
             .edges
-            .filter(x.node => x.node.id !== id);
-          store.writeQuery({ query: PRODUCTS_QUERY, data });
+            .filter(x => x.node.id !== id);
+          store.writeQuery({ query: PRODUCTS_QUERY, data, variables });
         },
       });
     console.log(deleteResponse);
   }
 
-  editProduct = (item) => {
+  editProduct = (item, variables) => {
     this
       .props
       .history
-      .push({ pathname: '/edit-product', state: item });
+      .push({ pathname: '/edit-product', state: item, variables });
   }
 
   render() {
@@ -144,51 +145,57 @@ class Products extends Component {
           <View style={styles.sortRow}>
             <Button
               title="Name"
-              onPress={() => refetch({
+              onPress={() => !loading && refetch({
               orderBy: variables.orderBy === 'name_ASC'
                 ? 'name_DESC'
                 : 'name_ASC',
+              after: null,
             })}
             />
             <Button
               title="Price"
-              onPress={() => refetch({
+              onPress={() => !loading && refetch({
               orderBy: variables.orderBy === 'price_ASC'
                 ? 'price_DESC'
                 : 'price_ASC',
+              after: null,
             })}
             />
           </View>
         </View>
-        <Button title="Add a product" onPress={() => history.push('/new-product')} />
+        <Button title="Add a product" onPress={() => history.push({ pathname: '/new-product', state: variables })} />
         <FlatList
           ListFooterComponent={() => productsConnection.pageInfo.hasNextPage && <ActivityIndicator size="large" color="#0000ff" />}
           keyExtractor={item => item.id}
           onEndReachedThreshold={0}
           onEndReached={() => {
-            if (this.calledOnce && productsConnections.pageInfo.hasNextPage) {
+            if (!loading && productsConnection.pageInfo.hasNextPage) {
               fetchMore({
                 variables: {
                   after: productsConnection.pageInfo.endCursor,
                 },
                 updateQuery: (previousResult, { fetchMoreResult }) => {
-                  if(!fetchMoreResult) return previousResult;
+                  if (!fetchMoreResult) return previousResult;
+                  if (!previousResult
+                      || !previousResult.productsConnection
+                      || !previousResult.productsConnection.edges) {
+                    return fetchMoreResult;
+                  }
                   return {
                     productsConnection: {
                       __typename: 'ProductsConnection',
                       pageInfo: fetchMoreResult.productsConnections.pageInfo,
                       edges: [
                         ...previousResult.productsConnections.edges,
-                        ...fetchMoreResult.productsConnections.edges
-                      ]
-                    }
-                  }
-                }
+                        ...fetchMoreResult.productsConnections.edges,
+                      ],
+                    },
+                  };
+                },
               });
-            }
-            else this.calledOnce = true;
+            } else this.calledOnce = true;
           }}
-          data={productsConnection.edges.map(x.node => ({
+          data={productsConnection.edges.map(x => ({
           ...x.node,
           showButtons: userId === x.node.seller.id,
         }))}
@@ -205,8 +212,8 @@ class Products extends Component {
                 <Text style={styles.price}>${item.price}</Text>
                 {item.showButtons && (
                 <View style={styles.edit}>
-                  <Button title="Edit" onPress={() => this.editProduct(item)} />
-                  <Button title="Delete" onPress={() => this.deleteProduct(item.id)} />
+                  <Button title="Edit" onPress={() => this.editProduct(item, variables)} />
+                  <Button title="Delete" onPress={() => this.deleteProduct(item.id, variables)} />
                 </View>
               )}
               </View>
@@ -230,11 +237,11 @@ const graphqlComponent = compose(
   graphql(PRODUCTS_QUERY, {
     options: {
       variables: {
-        orderBy: 'createdAt_ASC'
-      }
-    }
-  }), 
-  graphql(DELETE_PRODUCT)
+        orderBy: 'createdAt_DESC',
+      },
+    },
+  }),
+  graphql(DELETE_PRODUCT),
 )(Products);
 
 export default graphqlComponent;
